@@ -73,7 +73,7 @@ def drawboard(board, cleared_y, piece: Piece):
     piece_coords = set(piece.occupied_xys) if piece else None
     for i, line in enumerate(board[::-1]):
         by = len(board) - i - 1 + cleared_y
-        printchr(f"{by:>2} |")
+        printchr(f"|")
         for bx, v in enumerate(line):
             if piece and (bx, by) in piece_coords:
                 printchr("@", color=bcolors.WARNING)
@@ -84,7 +84,7 @@ def drawboard(board, cleared_y, piece: Piece):
         if piece and i == 0:
             printchr(f"\tPiece XY = ({piece.x}, {piece.y})")
         print("")
-    printchr("   +-------+\n")
+    printchr("+-------+\n")
 
 
 def can_move(board, cleared_y, piece, dx, dy):
@@ -93,11 +93,7 @@ def can_move(board, cleared_y, piece, dx, dy):
     for x, y in piece.occupied_xys:
         x += dx
         y += dy
-        if not (0 <= y < h):
-            return False
-        if not (0 <= x < w):
-            return False
-        if board[y - cleared_y][x] == "#":
+        if not (0 <= y < h and 0 <= x < w and board[y - cleared_y][x] == " "):
             return False
     return True
 
@@ -111,11 +107,11 @@ def persist(board, cleared_y, rock_maxh, piece: Piece):
 def hash_board(board):
     return hashlib.md5('|'.join(''.join(vals) for vals in board).encode("utf-8")).hexdigest()
 
+
 def solve(max_pieces):
     pieces = itertools.cycle(PIECES)
     w = 7
     rock_maxh = [-1] * w
-    # piece appears 3 units above highest rock
     cleared_y = 0
     board = []
 
@@ -125,12 +121,10 @@ def solve(max_pieces):
     data = itertools.cycle(read().strip())
     piece = None
     pieces_dropped = 0
-    DEBUG = "dbg" in sys.argv
-    for turn in itertools.count():
-        # init piece (if not created)
+    while True:
+        # next piece
         if piece is None:
             piece_raw = next(pieces)
-            # piece_raw = next(pieces)
             px, py = 2, max(rock_maxh) + 3 + len(piece_raw[1])
             piece = Piece(piece_raw, px, py)
             while len(board) + cleared_y <= py:
@@ -159,10 +153,9 @@ def solve(max_pieces):
                     print("Height per cycle: ", cycle_height)
 
                     # Teleport to the future
-                    # new_maxpieces = max_pieces % pieces_dropped
-                    cycles = (max_pieces - sn_pieces) // cycle_pieces - 1
-                    pieces_dropped += cycles * cycle_pieces
-                    jumpy = cycle_height * cycles
+                    skip_cycles = (max_pieces - sn_pieces) // cycle_pieces - 1
+                    pieces_dropped += skip_cycles * cycle_pieces
+                    jumpy = cycle_height * skip_cycles
                     cleared_y += jumpy
                     piece.move(0, jumpy)
                     rock_maxh = [y + jumpy for y in rock_maxh]
@@ -172,20 +165,11 @@ def solve(max_pieces):
                 snapshot_pieces[new_snapshot] = (pieces_dropped, maxh)
 
         action = next(data, '')
-        if DEBUG:
-            print("rockmax", rock_maxh)
-            print("cleared", cleared_y)
-            print("Action:", action, f"(Turn {turn})")
         if not action:
             break
 
-        if DEBUG and turn >= 0:
-            drawboard(board, cleared_y, piece)
-            # input()
-
         dx = 1 if action == RIGHT else -1
         if can_move(board, cleared_y, piece, dx, 0):
-            # print("Yes")
             piece.move(dx, 0)
         if can_move(board, cleared_y, piece, 0, -1):
             piece.move(0, -1)
@@ -195,11 +179,11 @@ def solve(max_pieces):
             pieces_dropped += 1
             if pieces_dropped >= max_pieces:
                 drawboard(board, cleared_y, piece)
-                if pieces_dropped > max_pieces:
-                    raise Exception(f"OOPS SOMETHING HAPPENED pieces_dropped={pieces_dropped}")
                 break
     print("Result:")
     print("Max height:", max(rock_maxh) + 1)
+    if pieces_dropped > max_pieces:
+        raise Exception(f"OOPS SOMETHING HAPPENED pieces_dropped={pieces_dropped}")
 
 
 # solve(2022)
