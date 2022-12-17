@@ -1,0 +1,8 @@
+.idea*
+__pycache__
+.vscode/
+*.pyc
+**/.ipynb_checkpoints
+.python-version
+.python-virtualenv
+**/.DS_Store
