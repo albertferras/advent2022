@@ -1,4 +1,5 @@
 import sys
+import time
 from collections import defaultdict
 
 
@@ -31,30 +32,32 @@ def neighbors(x, y, z):
     return (x - 1, y, z), (x + 1, y, z), (x, y - 1, z), (x, y + 1, z), (x, y, z - 1), (x, y, z + 1)
 
 
-def flood_fill(sides, cubes):
-    min_xyz = (min(x for x, y, z in sides), min(y for x, y, z in sides), min(z for x, y, z in sides))
-    max_xyz = (max(x for x, y, z in sides), max(y for x, y, z in sides), max(z for x, y, z in sides))
+def flooded_sides(cubes, sides):
+    minx, miny, minz = tuple(min(xyz[i] for xyz in cubes) - 1 for i in range(3))
+    maxx, maxy, maxz = tuple(max(xyz[i] for xyz in cubes) + 1 for i in range(3))
 
-    # fifo
-    q = [min_xyz]
+    q = {(minx, miny, minz)}
     visited = set()
     while q:
         xyz = q.pop()
         visited.add(xyz)
-        for xyz2 in neighbors(*xyz):
+        q.update(
+            xyz2
+            for xyz2 in neighbors(*xyz)
             if (
-                min_xyz[0] <= xyz2[0] <= max_xyz[0]
-                and min_xyz[1] <= xyz2[1] <= max_xyz[1]
-                and min_xyz[2] <= xyz2[2] <= max_xyz[2]
+                minx <= xyz2[0] <= maxx
+                and miny <= xyz2[1] <= maxy
+                and minz <= xyz2[2] <= maxz
                 and xyz2 not in visited
                 and xyz2 not in cubes
-            ):
-                q.append(xyz2)
+            )
+        )
 
     return {xyz: cnt for xyz, cnt in sides.items() if xyz in visited}
 
 
 def solve():
+    tstart = time.time()
     cubes = set()
     sides = defaultdict(int)
     for x, y, z in read():
@@ -65,8 +68,9 @@ def solve():
     non_cube_sides = {xyz: cnt for xyz, cnt in sides.items() if xyz not in cubes}
     print("Sides=", sum(non_cube_sides.values()))
 
-    flooded_sides = flood_fill(non_cube_sides, cubes)
-    print("Flooded Sides=", sum(flooded_sides.values()))
+    non_cube_flooded_sides = flooded_sides(cubes, non_cube_sides)
+    print("Flooded Sides=", sum(non_cube_flooded_sides.values()))
+    print(f"Time={time.time() - tstart:.3f}s")
 
 
 solve()
