@@ -1,5 +1,7 @@
 import re
 import sys
+from collections import defaultdict
+
 from utils import printchr
 
 DEBUG = "dbg" in sys.argv
@@ -66,47 +68,6 @@ def read():
         else:
             moves = re.findall(r"(\d+|[LR]+)", line.strip())
 
-    # rotations = {}
-    # while len(sides) + len(rotations)/2 != 4*4:
-    #     for x in range(slen):
-    #         for y in range(slen):
-    #             xy = complex(x, y)
-    #             if xy not in sides:
-    #                 continue
-    #             for d, v in enumerate(DIRECTIONS):
-    #                 xy2 = xy + v
-    #                 if xy2 not in sides:
-    #                     # Need to check rotation
-    #                     for rot in (-1, 1):  # turn left, right
-    #                         xy3 = xy + v + DIRECTIONS[(d + rot) % 4]
-    #                         if xy3 in sides:
-    #                             rotations[(xy, xy2)] = (xy3, (d + rot) % 4)
-    #                             rotations[(xy3, xy2)] = (xy, (d + rot + 2) % 4)  # opposite
-    #                         if xy3 in rotations:
-    #                             dbg(f"{sideid(xy)} -> {sideid(xy2)} ?")
-    #                             #  ????? I surrender
-    #                             pass
-    # ^^^^ I surrender. I Will just create this manually (see below)
-
-    if "sample" not in sys.argv:
-        rotations = {
-            1: {LEFT: (8, RIGHT), UP: (12, RIGHT), RIGHT: (2, RIGHT), DOWN: (5, DOWN)},
-            2: {LEFT: (1, LEFT), UP: (12, UP), RIGHT: (9, LEFT), DOWN: (5, LEFT)},
-            5: {LEFT: (8, DOWN), UP: (1, UP), RIGHT: (2, UP), DOWN: (9, DOWN)},
-            8: {LEFT: (1, RIGHT), UP: (5, RIGHT), RIGHT: (9, RIGHT), DOWN: (12, DOWN)},
-            9: {LEFT: (8, LEFT), UP: (5, UP), RIGHT: (2, LEFT), DOWN: (12, LEFT)},
-            12: {LEFT: (1, DOWN), UP: (8, UP), RIGHT: (9, UP), DOWN: (2, DOWN)},
-        }
-    else:
-        rotations = {
-            2: {LEFT: (5, DOWN), UP: (4, DOWN), RIGHT: (11, LEFT), DOWN: (6, DOWN)},
-            4: {LEFT: (11, UP), UP: (2, DOWN), RIGHT: (5, RIGHT), DOWN: (10, UP),},
-            5: {LEFT: (4, LEFT), UP: (2, RIGHT), RIGHT: (6, RIGHT), DOWN: (10, RIGHT)},
-            6: {LEFT: (5, LEFT), UP: (2, UP), RIGHT: (11, DOWN), DOWN: (10, DOWN)},
-            10: {LEFT: (5, DOWN), UP: (6, UP), RIGHT: (11, RIGHT), DOWN: (4, UP)},
-            11: {LEFT: (10, LEFT), UP: (6, LEFT), RIGHT: (2, LEFT), DOWN: (4, RIGHT)},
-        }
-
     # Draw map of sides
     print("----" * 4)
     for y in range(1, 5):
@@ -120,6 +81,22 @@ def read():
                 printchr("    ")
         print("")
     print("----" * 4)
+
+    rotations = {side: {} for side in sides}
+
+    def _get_rot(side, ad):
+        if ad in rotations[side]:
+            return rotations[side][ad]
+        side_front = getsidep(sidetop(side) + DIRECTIONS[ad] * slen)
+        if side_front in sides:
+            return side_front, ad
+        side_r, ad_r = _get_rot(side, (ad + 1) % 4)
+        side_l, ad_l = _get_rot(side_r, (ad_r - 1) % 4)
+        rotations[side][ad] = side_l, (ad_l + 1) % 4
+        return rotations[side][ad]
+
+    for side in sides:
+        rotations[side] = {ad: _get_rot(side, ad) for ad in range(4)}
     return tmap, moves, start, rotations
 
 
