@@ -132,5 +132,48 @@ def solve2():
     print("Part2 = ", int(me.number))
 
 
-solve()
+def solve2b():
+    monkeys = read_monkeys()
+    run(monkeys)
+
+    monkeys['root'].op = '='
+    path = []
+    m = monkeys['humn']
+    while m != monkeys['root']:
+        path.append(m)
+        m = m.parents[0]
+    path.append(m)
+    path = path[::-1]
+
+    target_value = path[0].number
+    for i in range(len(path) - 1):
+        m = path[i]
+        m1, m2 = m.depends_on
+        if path[i+1].name == m1.name:
+            if m.op == '=':
+                target_value = m2.number
+            elif m.op == '+':
+                target_value -= m2.number
+            elif m.op == '-':
+                target_value += m2.number
+            elif m.op == '/':
+                target_value *= m2.number
+            elif m.op == '*':
+                target_value /= m2.number
+        else:
+            if m.op == '=':
+                target_value = m1.number
+            elif m.op == '+':
+                target_value -= m1.number
+            elif m.op == '-':
+                target_value = m1.number - target_value
+            elif m.op == '/':
+                target_value = m1.number / target_value
+            elif m.op == '*':
+                target_value /= m1.number
+    print("RESULT = ", target_value)
+
+# solve()
 solve2()
+
+solve2b()
